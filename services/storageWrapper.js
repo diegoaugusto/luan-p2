@@ -1,10 +1,17 @@
+/*
+Cloud Storage Client Libraries
+https://cloud.google.com/storage/docs/reference/libraries
+
+Google Cloud Storage: Node.js Client
+https://cloud.google.com/nodejs/docs/reference/storage/1.4.x/
+*/
+
 var fs = require('fs');
 var obj = JSON.parse(fs.readFileSync("./config/storageCredentials.json", 'utf8'));
 
 // [START storage_list_buckets]
 // Imports the Google Cloud client library
 const Storage = require('@google-cloud/storage')(obj);
-
 
 var storageAPI = {
   listBuckets: function() {
@@ -24,15 +31,23 @@ var storageAPI = {
       });
   },
 
-  getFiles: function(bucketName, options, callback) {
+  _setUrl: function(url, bucketFile) {
+    bucketFile.url = url;
+  },
+
+  getFiles: function(bucketName, options) {
     return Storage.bucket(bucketName).getFiles(options)
       .then(results => {
         var bucketFiles = new Array();
         const files = results[0];
+
         const signedUrlOptions = {
           action: 'read',
           expires: '03-17-2025',
         };
+
+        //Promise[] promises = new Promise()[files.length];
+        //var p = 0;
 
         files.forEach(file => {
           var bucketFile = {};
@@ -60,24 +75,24 @@ var storageAPI = {
           // console.log(`Metadata: ${metadata.metadata}`);
           // console.log(`Media link: ${metadata.mediaLink}`);
 
-
           bucketFile.name = file.name;
           bucketFile.metadata = file.metadata;
+          bucketFile.signedUrl = "";
 
-          bucketFile.url = file.getSignedUrl(signedUrlOptions).then(results => {
-            const url = results[0];
-            return Promise.resolve(url);
-          })
-          .catch(err => {
-            console.error('ERROR:', err);
-            return undefined;
-          });
+          // promises[p++] = file.getSignedUrl(signedUrlOptions);
+          //
+          // file.getSignedUrl(signedUrlOptions)
+          // .then(results => bucketFile.signedUrl = results[0])
+          // .catch(err => {
+          //   console.error('ERROR:', err);
+          //   return undefined;
+          // });
 
           bucketFiles.push(bucketFile);
         });
 
         //console.log(JSON.stringify(bucketFiles));
-        return callback(bucketFiles);
+        return Promise.all(bucketFiles);
       })
       .catch(err => {
         console.error('ERROR:', err);

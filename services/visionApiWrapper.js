@@ -13,20 +13,29 @@ const fileName = './public/images/runners.jpg';
 
 var visionAPI = {
   // Performs label detection on the image file
-  textDetection : function() {
+  textDetection : function(bucketName, fileName) {
     // Prepare the request object
     const request = {
       source: {
-        filename: fileName
+        //filename: fileName
+        gcsImageUri: `gs://${bucketName}/${fileName}`,
+        //imageUri: `gs://${bucketName}/${fileName}`
       }
     };
 
-    Vision.textDetection(request)
+    return Vision.textDetection(request)
       .then((results) => {
         const labels = results[0].textAnnotations;
+        var terms = new Array();
+        //console.log('Text: ['+ fileName +']');
+        for (var i = 1; i < labels.length; i++) {
+          //console.log((i) + "\t" + labels[i].description);
+          terms.push(labels[i].description);
+        }
 
-        console.log('Text:');
-        labels.forEach((label) => console.log(label.description));
+        var result = {name:fileName, tokens:terms};
+        //console.log(JSON.stringify(result));
+        return Promise.resolve(result);
       })
       .catch((err) => {
         console.error('ERROR:', err);
