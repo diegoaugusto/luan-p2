@@ -40,6 +40,40 @@ var visionAPI = {
       .catch((err) => {
         console.error('ERROR:', err);
       });
+  },
+
+
+  textDetectionBatch : function(bucketName, fileNames) {
+    //console.log(fileNames.length);
+    // Make a call to the Vision API to detect text
+    let requests = [];
+    fileNames.forEach((filename) => {
+      let request = {
+        //image: {content: fs.readFileSync(filename).toString('base64')},
+        image: {source: {gcsImageUri: `gs://${bucketName}/${filename}`}},
+        features: {type: 'TEXT_DETECTION'}
+      };
+      requests.push(request);
+    });
+    return Vision.batchAnnotateImages({requests: requests})
+        .then((results) => {
+          let detections = results[0].responses;
+          var textResponse = {};
+          fileNames.forEach(function (filename, i) {
+            var response = detections[i];
+
+            if (response.textAnnotations.length) {
+              //console.log("["+ i +"] -------- " + filename);
+              var texts = response.textAnnotations;
+              for (var j = 1; j < texts.length; j++) {
+                var text = texts[j];
+                //console.log(text.description || '');
+              }
+            } else {
+              //console.log(filename + ' had no discernable text.');
+            }
+          });
+        });
   }
 }
 

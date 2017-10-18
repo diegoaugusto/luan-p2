@@ -59,4 +59,54 @@ router.get('/', function(req, res, next) {
   //res.send('photos');
 });
 
+
+router.get('/batch', function(req, res, next) {
+  console.log("\n\nComeçando o processamento em batch: " + new Date());
+  const bucketName = "luan-project";
+  const options = {
+    prefix: "Alphaville_Run/",
+  };
+
+  // var fileNames = ['./public/images/runners.jpg',
+  //                  './public/images/alphaville.jpg',
+  //                   './public/images/grd.jpg',
+  //                   './public/images/masters.jpg',
+  //                   './public/images/med.jpg',
+  //                   './public/images/peq.jpg'];
+
+  storageAPI.getFiles(bucketName, options).then((bucketFiles) => {
+    //console.log(JSON.stringify(bucketFiles));
+    var proms = new Array();
+    var files = new Array();
+    var count = 1;
+    bucketFiles.forEach(bucketFile => {
+      if (count % 16 == 0) {
+        var prom = visionAPI.textDetectionBatch(bucketName, files.slice(0));
+        proms.push(prom);
+        //console.log("---Count: "+count);
+        files = new Array();
+      }
+      files.push(bucketFile.name);
+      count++;
+    });
+
+    if (count < 16) {
+      var prom = visionAPI.textDetectionBatch(bucketName, files.slice(0));
+      proms.push(prom);
+      //console.log("---Count: "+count);
+    }
+
+    proms.splice(0, 1);
+    Promise.all(proms)
+      .then(results => {
+        console.log("\n\nFinalizando o processamento em batch: " + new Date());
+        res.json("test");
+      })
+      .catch(err => {
+        console.log(err);
+      });
+  });
+
+});
+
 module.exports = router;
